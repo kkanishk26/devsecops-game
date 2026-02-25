@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
+        DOCKERHUB_USER = "kanishkdoc"
         IMAGE_NAME = "tetris-game"
         IMAGE_TAG = "v1"
-        DOCKERHUB_USER = "kkanishk26"
     }
 
     stages {
@@ -19,13 +19,17 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG ./app'
+                sh '''
+                docker build -t $IMAGE_NAME:$IMAGE_TAG ./app
+                '''
             }
         }
 
         stage('Security Scan - Trivy') {
             steps {
-                sh 'trivy image $IMAGE_NAME:$IMAGE_TAG'
+                sh '''
+                trivy image $IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
 
@@ -36,7 +40,9 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
                 }
             }
         }
@@ -50,11 +56,12 @@ pipeline {
             }
         }
 
-        stage('Run Container') {
+        stage('Deploy Container') {
             steps {
                 sh '''
                 docker rm -f tetris-container || true
-                docker run -d -p 8090:80 --name tetris-container $IMAGE_NAME:$IMAGE_TAG
+                docker run -d -p 8090:80 --name tetris-container \
+                $DOCKERHUB_USER/$IMAGE_NAME:$IMAGE_TAG
                 '''
             }
         }
