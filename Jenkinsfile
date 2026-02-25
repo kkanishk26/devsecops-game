@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "tetris-game"
         IMAGE_TAG = "v1"
+        DOCKERHUB_USER = "kkanishk26"
     }
 
     stages {
@@ -25,6 +26,27 @@ pipeline {
         stage('Security Scan - Trivy') {
             steps {
                 sh 'trivy image $IMAGE_NAME:$IMAGE_TAG'
+            }
+        }
+
+        stage('DockerHub Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image to DockerHub') {
+            steps {
+                sh '''
+                docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKERHUB_USER/$IMAGE_NAME:$IMAGE_TAG
+                docker push $DOCKERHUB_USER/$IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
 
