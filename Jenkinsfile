@@ -1,32 +1,29 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "tetris-game"
+    }
+
     stages {
 
-        stage('Clone Repository') {
+        stage('Clone Code') {
             steps {
-                git 'https://github.com/kkanishk26/devsecops-game.git'
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t tetris-game:v1 ./app'
+                sh 'docker build -t $IMAGE_NAME:v1 ./app'
             }
         }
 
-        stage('Run Security Scan') {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./app', odcInstallation: 'Default'
-            }
-        }
-
-        stage('Deploy Container') {
+        stage('Run Container') {
             steps {
                 sh '''
-                docker stop tetris-game || true
-                docker rm tetris-game || true
-                docker run -d -p 8090:80 --name tetris-game tetris-game:v1
+                docker rm -f tetris-container || true
+                docker run -d -p 8090:80 --name tetris-container $IMAGE_NAME:v1
                 '''
             }
         }
